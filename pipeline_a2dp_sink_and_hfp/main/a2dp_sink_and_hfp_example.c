@@ -32,7 +32,7 @@
 #include "raw_stream.h"
 
 #include "display_helper.h"
-#include "touch_handler.h"
+#include "msg_handler.h"
 
 #if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
 #include "filter_resample.h"
@@ -504,8 +504,8 @@ void app_main(void)
     ESP_LOGI(TAG, "[4.3] Start all peripherals");
     esp_periph_start(set, bt_periph);
 
-    ESP_LOGI(TAG, "[4.4] Initialize Touch handler");
-    init_touch_handler(&bt_periph, &led_periph);
+    ESP_LOGI(TAG, "[4.4] Initialize msg handler");
+    init_msg_handler(&bt_periph, &led_periph);
 
     ESP_LOGI(TAG, "[ 5 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -525,7 +525,7 @@ void app_main(void)
 
     // Set to wakeup finished pattern
     vTaskDelay(pdMS_TO_TICKS(20));
-    display_service_set_pattern((void *)led_periph, DISPLAY_PATTERN_WAKEUP_FINISHED, 100);    
+    display_service_set_pattern((void *)led_periph, DISPLAY_PATTERN_WAKEUP_FINISHED, 0);    
 
     while (1) {
         audio_event_iface_msg_t msg;
@@ -566,25 +566,8 @@ void app_main(void)
 
             continue;
         }
-        // Handle touch events
-        touch_handler(msg);
-
-        if (msg.source_type == PERIPH_ID_BLUETOOTH
-            && msg.source == (void *)bt_periph) 
-        {
-            /* Stop when the Bluetooth is disconnected or suspended */
-            if (msg.cmd == PERIPH_BLUETOOTH_DISCONNECTED) {
-                ESP_LOGI(TAG, "[ * ] Bluetooth disconnected");
-                // Set to wakeup on pattern
-                display_service_set_pattern((void *)led_periph, DISPLAY_PATTERN_BT_DISCONNECTED, 100);
-            }
-            /* Bluetooth is connected */
-            else if (msg.cmd == PERIPH_BLUETOOTH_CONNECTED) {
-                ESP_LOGI(TAG, "[ * ] Bluetooth connected");
-                // Set to wakeup on pattern
-                display_service_set_pattern((void *)led_periph, DISPLAY_PATTERN_BT_CONNECTED, 100);
-            }
-        }
+        // Handle msg events
+        msg_handler(msg);
         
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer

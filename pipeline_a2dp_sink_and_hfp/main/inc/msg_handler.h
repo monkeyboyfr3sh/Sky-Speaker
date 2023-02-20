@@ -1,5 +1,5 @@
-#ifndef _TOUCH_HANDLER_H_
-#define _TOUCH_HANDLER_H_
+#ifndef _MSG_HANDLER_H_
+#define _MSG_HANDLER_H_
 
 #include "esp_peripherals.h"
 #include "esp_err.h"
@@ -11,8 +11,8 @@
 #include "periph_button.h"
 #include "periph_adc_button.h"
 
-esp_err_t init_touch_handler(esp_periph_handle_t * bt_periph, display_service_handle_t * led_periph);
-esp_err_t touch_handler(audio_event_iface_msg_t msg);
+esp_err_t init_msg_handler(esp_periph_handle_t * bt_periph, display_service_handle_t * led_periph);
+esp_err_t msg_handler(audio_event_iface_msg_t msg);
 
 
 #endif
