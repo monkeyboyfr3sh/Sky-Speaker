@@ -31,6 +31,9 @@
 #include "filter_resample.h"
 #include "raw_stream.h"
 
+#include "display_helper.h"
+#include "touch_handler.h"
+
 #if (CONFIG_ESP_LYRATD_MSC_V2_1_BOARD || CONFIG_ESP_LYRATD_MSC_V2_2_BOARD)
 #include "filter_resample.h"
 #endif
@@ -43,8 +46,8 @@
 #define HFP_RESAMPLE_RATE 8000
 #endif
 
-static const char *TAG = "BLUETOOTH_EXAMPLE";
-static const char *DEVICE_NAME = "ESP_SPEAKER";
+static const char *TAG = "MAIN";
+static const char *DEVICE_NAME = "Sky Speaker";
 static const char *BT_HF_TAG = "BT_HF";
 
 static audio_element_handle_t  raw_read, bt_stream_reader, i2s_stream_writer, i2s_stream_reader;
@@ -393,198 +396,6 @@ void bt_hf_client_cb(esp_hf_client_cb_event_t event, esp_hf_client_cb_param_t *p
     }
 }
 
-
-#include "esp_log.h"
-#include "board.h"
-#include "audio_mem.h"
-
-#include "periph_sdcard.h"
-#include "periph_adc_button.h"
-#include "led_bar_is31x.h"
-
-#include <string.h>
-#include "esp_types.h"
-#include "esp_log.h"
-#include "led_bar_is31x.h"
-#include "periph_is31fl3216.h"
-
-esp_err_t my_led_bar_is31x_pattern(void *handle, int pat, int value)
-{
-    esp_err_t ret =  ESP_OK;
-    if (handle == NULL) {
-        ESP_LOGE(TAG, "led_bar_is31x_pattern instance has not initialized");
-        return ESP_FAIL;
-    }
-    esp_periph_handle_t h = (esp_periph_handle_t)handle;
-
-    switch (pat) {
-        case DISPLAY_PATTERN_WIFI_SETTING: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM) - 1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_duty_step(h, 20);
-                periph_is31fl3216_set_interval(h, 10);
-                periph_is31fl3216_set_act_time(h, 0);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_FLASH);
-                break;
-            }
-        case DISPLAY_PATTERN_WIFI_CONNECTTING: {
-                periph_is31fl3216_set_light_on_num(h, 1, BLUE_LED_MAX_NUM);
-                periph_is31fl3216_set_interval(h, 100);
-                periph_is31fl3216_set_shift_mode(h, PERIPH_IS31_SHIFT_MODE_ACC);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_SHIFT);
-                break;
-            }
-        case DISPLAY_PATTERN_WIFI_CONNECTED: {
-                periph_is31fl3216_set_light_on_num(h, 2, BLUE_LED_MAX_NUM);
-                periph_is31fl3216_set_interval(h, 150);
-                periph_is31fl3216_set_shift_mode(h, PERIPH_IS31_SHIFT_MODE_SINGLE);
-                periph_is31fl3216_set_act_time(h, 2500);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_SHIFT);
-                break;
-            }
-        case DISPLAY_PATTERN_WIFI_DISCONNECTED: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM) - 1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_duty_step(h, 20);
-                periph_is31fl3216_set_interval(h, 10);
-                periph_is31fl3216_set_act_time(h, 0);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_FLASH);
-                break;
-            }
-            break;
-        case DISPLAY_PATTERN_WIFI_SETTING_FINISHED: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM) - 1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_OFF);
-                break;
-            }
-
-        case DISPLAY_PATTERN_BT_CONNECTTING:
-            break;
-        case DISPLAY_PATTERN_BT_CONNECTED:{
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM) - 1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                // periph_is31fl3216_set_duty_step(h, 20);
-                // periph_is31fl3216_set_interval(h, 10);
-                // periph_is31fl3216_set_act_time(h, 0);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_ON);
-                break;
-            }
-        case DISPLAY_PATTERN_BT_DISCONNECTED: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM)-1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_OFF);
-                bits_mask = ((1 << 0));
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_ON);
-                break;
-        }
-        case DISPLAY_PATTERN_RECORDING_START: {
-                int bits_mask = (1 << 12);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_ON);
-                break;
-            }
-        case DISPLAY_PATTERN_RECORDING_STOP: {
-                int bits_mask = (1 << 12);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_OFF);
-                break;
-            }
-
-        case DISPLAY_PATTERN_RECOGNITION_START: {
-                periph_is31fl3216_set_light_on_num(h, 1, BLUE_LED_MAX_NUM);
-                periph_is31fl3216_set_interval(h, 150);
-                periph_is31fl3216_set_shift_mode(h, PERIPH_IS31_SHIFT_MODE_SINGLE);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_SHIFT);
-                break;
-            }
-        case DISPLAY_PATTERN_RECOGNITION_STOP: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM) - 1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_OFF);
-                break;
-            }
-        case DISPLAY_PATTERN_WAKEUP_ON: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM) - 1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_duty_step(h, 20);
-                periph_is31fl3216_set_interval(h, 10);
-                periph_is31fl3216_set_act_time(h, 0);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_FLASH);
-                break;
-            }
-            break;
-        case DISPLAY_PATTERN_WAKEUP_FINISHED: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM)-1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_OFF);
-                bits_mask = ((1 << 0));
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_ON);
-                break;
-            }
-        case DISPLAY_PATTERN_MUSIC_ON: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM) - 1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_BY_AUDIO);
-                break;
-            }
-        case DISPLAY_PATTERN_MUSIC_FINISHED: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM) - 1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_BY_AUDIO);
-                break;
-            }
-
-        case DISPLAY_PATTERN_VOLUME:
-            break;
-
-        case DISPLAY_PATTERN_TURN_ON: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM) - 1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_OFF);
-                break;
-            }
-            break;
-        case DISPLAY_PATTERN_TURN_OFF: {
-                int bits_mask = ((1 << BLUE_LED_MAX_NUM) - 1);
-                periph_is31fl3216_set_blink_pattern(h, bits_mask);
-                periph_is31fl3216_set_state(h, IS31FL3216_STATE_OFF);
-                break;
-            }
-            break;
-        default:
-            ESP_LOGW(TAG, "The mode is invalid");
-            break;
-    }
-
-    return ret;
-}
-
-display_service_handle_t my_audio_board_init(void)
-{
-    esp_periph_handle_t led = led_bar_is31x_init();
-    AUDIO_NULL_CHECK(TAG, led, return NULL);
-    display_service_config_t display = {
-        .based_cfg = {
-            .task_stack = 0,
-            .task_prio  = 0,
-            .task_core  = 0,
-            .task_func  = NULL,
-            .service_start = NULL,
-            .service_stop = NULL,
-            .service_destroy = NULL,
-            .service_ioctl = my_led_bar_is31x_pattern,
-            .service_name = "DISPLAY_serv",
-            .user_data = NULL,
-        },
-        .instance = led,
-    };
-
-    return display_service_create(&display);
-}
-
 void app_main(void)
 {
     esp_err_t err = nvs_flash_init();
@@ -687,11 +498,14 @@ void app_main(void)
     ESP_LOGI(TAG, "[4.1] Initialize Touch peripheral");
     audio_board_key_init(set);
 
-    ESP_LOGI(TAG, "[4.3] Create Bluetooth peripheral");
+    ESP_LOGI(TAG, "[4.2] Create Bluetooth peripheral");
     esp_periph_handle_t bt_periph = bluetooth_service_create_periph();
 
-    ESP_LOGI(TAG, "[4.4] Start all peripherals");
+    ESP_LOGI(TAG, "[4.3] Start all peripherals");
     esp_periph_start(set, bt_periph);
+
+    ESP_LOGI(TAG, "[4.4] Initialize Touch handler");
+    init_touch_handler(&bt_periph, &led_periph);
 
     ESP_LOGI(TAG, "[ 5 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -709,21 +523,16 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 7 ] Listen for all pipeline events");
 
-    const TickType_t display_update_period_tick = pdMS_TO_TICKS(100);
-    TickType_t display_update_timestamp = xTaskGetTickCount();
-    int value = 0;
-    int pattern = DISPLAY_PATTERN_UNKNOWN;
-    vTaskDelay(pdMS_TO_TICKS(10));
-
     // Set to wakeup finished pattern
-    display_service_set_pattern((void *)led_periph, DISPLAY_PATTERN_WAKEUP_FINISHED, 100);
-    
+    vTaskDelay(pdMS_TO_TICKS(20));
+    display_service_set_pattern((void *)led_periph, DISPLAY_PATTERN_WAKEUP_FINISHED, 100);    
+
     while (1) {
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
         if (ret != ESP_OK) {
-            // ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
-            // continue;
+            ESP_LOGE(TAG, "[ * ] Event interface error: '%s'", esp_err_to_name(ret) );
+            continue;
         }
 
         if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT &&
@@ -757,35 +566,8 @@ void app_main(void)
 
             continue;
         }
-        if ((msg.source_type == PERIPH_ID_TOUCH || msg.source_type == PERIPH_ID_BUTTON || msg.source_type == PERIPH_ID_ADC_BTN)
-            && (msg.cmd == PERIPH_TOUCH_TAP || msg.cmd == PERIPH_BUTTON_PRESSED || msg.cmd == PERIPH_ADC_BUTTON_PRESSED)) {
-
-            if ((int) msg.data == get_input_play_id()) {
-                ESP_LOGI(TAG, "[ * ] [Play] touch tap event");
-                periph_bluetooth_play(bt_periph);
-            } else if ((int) msg.data == get_input_set_id()) {
-                ESP_LOGI(TAG, "[ * ] [Set] touch tap event");
-                periph_bluetooth_pause(bt_periph);
-            } else if ((int) msg.data == get_input_volup_id()) {
-                ESP_LOGI(TAG, "[ * ] [Vol+] touch tap event");
-                periph_bluetooth_next(bt_periph);
-            } else if ((int) msg.data == get_input_voldown_id()) {
-                ESP_LOGI(TAG, "[ * ] [Vol-] touch tap event");
-                periph_bluetooth_prev(bt_periph);
-            } else if ((int) msg.data == get_input_mode_id()) {
-                pattern++;
-                if(pattern>=DISPLAY_PATTERN_MAX){
-                    pattern = 0;
-                }
-                ESP_LOGI(TAG,"Setting pattern %d with value = %d",pattern,value);
-                display_service_set_pattern((void *)led_periph, pattern, value);
-            } else if ((int) msg.data == get_input_rec_id()) {
-                ESP_LOGI(TAG,"Setting pattern %d with value = %d",pattern,value);
-                display_service_set_pattern((void *)led_periph, pattern, value);
-            }
-
-            vTaskDelay(pdMS_TO_TICKS(250));
-        }
+        // Handle touch events
+        touch_handler(msg);
 
         if (msg.source_type == PERIPH_ID_BLUETOOTH
             && msg.source == (void *)bt_periph) 
